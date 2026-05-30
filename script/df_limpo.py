@@ -49,15 +49,15 @@ df_limpo['PR_CAT'] = df_limpo['PR_CAT'].replace({'#N/D':'Sem Categoria'})
 print(f'Categorias únicas após substituição de #N/D: {df_limpo['PR_CAT'].unique()}')  #verificando a alteração.
 print(f'{'=' *100}')
 
-#Verificação de nulos das demais colunas. 
+#Verificação de nulos disfarçados das demais colunas. 
 demais_colunas = ['CO_ID', 'CL_ID', 'CL_GENERO', 'CL_EC', 'CL_FHL', 'CL_SEG','PR_ID' ,'PR_NOME' ]
 df_limpo[demais_colunas] = df_limpo[demais_colunas].replace('#N/D', np.nan) #subsituir #N/A (padrão de nulo disfaraçado do dataset) por nulos reais.
-print(f'Quantidade de nulos nas demais coluna: \n{df_limpo[demais_colunas].isna().sum()}')
+print(f'Quantidade de disfarçados nas demais coluna: \n{df_limpo[demais_colunas].isna().sum()}')
 print(f'{'=' *100}')
 
 #Na coluna PR_NOME existem 3228 registro de nulos disfarçados (#N/D). Será substituído por Sem Nome
 df_limpo['PR_NOME'] = df_limpo['PR_NOME'].fillna('Sem nome')
-print(f'Quantidade de nulos na coluna PR_NOME após alteração: {df_limpo['PR_NOME'].isna().sum()}') 
+print(f'Quantidade de nulos disfarçados na coluna PR_NOME após alteração: {df_limpo['PR_NOME'].isna().sum()}') 
 print(f'{'=' *100}')
 #Observação: será verificado os nulos disfarçados da coluna DATA junto com a conversão para datetime.
 
@@ -109,13 +109,43 @@ print(f'Quartil 1: {quartil_1}')
 print(f'Quartil 3: {quartil_3}')
 print(f'{'=' *100}')
 
+#3.2 Vertificando outliers no volume de itens por compra com IQR.
+'''
+A inteção é saber se existem compras com volume de itens muito acima do normal.
+Com isso, podemos identificar quais são os clientes que efetuaram essas compras e 
+esse comportamento se repete nas demais compras desse clientes.
+'''
+itens_compra = df_limpo['CO_ID'].value_counts()
+
+#3.2.1 Calcular os quartis
+print('Verificação de Outliers no volume de itens por compra.')
+Q1 = itens_compra.quantile(0.25)
+Q3 = itens_compra.quantile(0.75)
+IQR = Q3 - Q1
+
+#3.2.2 Calcular os limites
+limite_inf = Q1 - 1.5 * IQR #Abaixo disso é outlier
+limite_sup = Q3 + 1.5 * IQR #Acima disso é outlier
+
+print(f'Faixa normal de itens por compra: [{limite_inf}, {limite_sup}]')
+
+#3.2.3 Ver quais são os outliers
+print('Outliers:')
+mascara = (itens_compra < limite_inf) | (itens_compra > limite_sup)
+print(f'Outliers encontrados (maiores quantidade de itens por compra): {mascara.sum()}') 
+print(itens_compra[mascara])
+print(f'{'=' *100}')
+
+'''
+Não foram detectados compras com volume de itens muito acima do normal, portanto vamos verificar os clientes 
+com maiores volumes de itens por compra de outra forma (ITEM 3.4 Top 30 compras com maior valume por cliente) 
+'''
+
+#Média de itens por venda.
 
 
-#Homem ou mulher que mais frequenta o mercado (numero de compras)??????????
 
-
-
-#3.2 estado civil x numero filhos
+#3.3 estado civil x numero filhos
 
 condicoes = [
     (df_limpo['CL_EC'] == 1) & (df_limpo['CL_FHL'] == 0), #Casados sem filho (famlia 2 pessoas)
@@ -157,8 +187,19 @@ print(f'{'=' *100}')
 print('Perfil dos Clientes em %:')
 print(df_clientes['CL_PERFIL'].value_counts(normalize=True) * 100)
 print(f'{'=' *100}')
+ 
+#3.4 Top 30 compras com maior valume por cliente
+print('Top 20 compras com maior valume por cliente:')
+top_20_compras = df_limpo[['CL_ID','CO_ID', 'CL_PERFIL']].value_counts().head(30)
+print(f'{top_20_compras}')
+print(f'{'=' *100}')
 
-
+'''
+15 Divorciados aparecem na lista de compradores de maiores itens.
+Isso pode sugerir o comportamento desse público:
+- Costumam fazer a compra do mês ao irem ao supermercado (por isso muitos itens).
+Essa hipótese será investigada nos próximos comitts do projeto.
+'''
 #Parte 4: Explorar padrões de agrupamento
 
 #4.1 Verificar quais são as categorias  mais compradas por homens e mulheres usando groupby()
@@ -202,7 +243,7 @@ As mulheres compram mais itens para limpeza da casa do que os homens.
 
 #4.3 Média de filhos por segmentação econômica do cliente usando pivot_table
 
-#antes do agrupamento precisamos filtrar o ID único dos clientes, para nao distorcer a análise.
+#Antes do agrupamento precisamos filtrar o ID único dos clientes, para nao distorcer a análise.
 id_clientes_unicos = df_limpo.drop_duplicates(subset=['CL_ID'], keep='first')
 
 print('Média de filhos por segmentação econômica')
@@ -221,6 +262,12 @@ Embora a média de filhos seja parecida, existe uma tendência clara.
 Conforme a segmentação econômica diminui, a média de filhos aumenta.
 '''
 
-
+'''
+Proximos commits 
+- Gênero que mais frequenta o mercado (numero de compras)?
+- Ver quais dias tem mais movimento (hipótese: confimar se as datas conincidem com os dias de pagamento de salário)
+- Investigar a hipótese sobre os divorciados (ida ao mercado para fazer a compra do mês, por isso vários itens.
+podemos verificar a frequencia de idas ao mercado no intervalo de datas do dataset. )
+'''
 
 
