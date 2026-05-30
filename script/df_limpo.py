@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 pd.set_option('display.max_columns', None) #Exibição de todas as colunas do DataFrame
 pd.set_option('display.float_format','{:.2f}'.format) #Formatar float para 2 casas decimais
@@ -24,7 +25,7 @@ def qualidade_dados(df, nome):
 
 qualidade_dados(df_limpo, 'Varejo')
 
-#Parte 2: Eliminar duplicadas, remover nulos, tratar nulos disfarçados, ajustar tipos de dados e padronizar strings.
+#Parte 2: Tratamentos
 
 #2.1 Eliminar duplicadas: será mantida apenas primeira ocorrência. Todas as outras repetições serão removidas.
 df_limpo = df_limpo.drop_duplicates(keep='first') #dro_duplicates sem subset pois quero remover apenas as linhas totalmente iguais.
@@ -32,21 +33,39 @@ df_limpo = df_limpo.drop_duplicates(keep='first') #dro_duplicates sem subset poi
 print(f'Duplicadas Após Keep: {df_limpo.duplicated().sum()}')
 print(f'{'=' * 100}')
 #Reindexar após remoção de linhas
-df = df_limpo.reset_index(drop=True)
+df_limpo = df_limpo.reset_index(drop=True)
 
 #2.2 Remover nulos: as colunas 11, 12, 13 e 14 tem 100% de nulos e serão excluidas, pois não contribuem com informações para a análise
-df = df.drop(columns=['Unnamed: 10', 'Unnamed: 11', 'Unnamed: 12', 'Unnamed: 13'])
+df_limpo = df_limpo.drop(columns=['Unnamed: 10', 'Unnamed: 11', 'Unnamed: 12', 'Unnamed: 13'])
 
-#2.3 Nulos disfarçados da coluna PR_CAT (categoria do produto)
+#2.3 Tratamento de nulos disfarçados
+
+#Coluna PR_CAT (categoria do produto). 
 print(f'Categorias únicas: {df_limpo['PR_CAT'].unique()}') #aqui foi verificado que existem linhas preenchidas com categoria #N/D 
+#Substituição de #N/D por Sem Categoria
 print(f'{'=' * 100}')
-#Substituição de #N/D por Sem Categoria e transformação para title (primeira letra maiuscula)
-df_limpo['PR_CAT'] = df_limpo['PR_CAT'].replace({'#N/D':'Sem Categoria'})
 
-#2.4 Padronizar strings (colunas PR_CAT e PR_NOME)
+df_limpo['PR_CAT'] = df_limpo['PR_CAT'].replace({'#N/D':'Sem Categoria'})
+print(f'Categorias únicas após substituição de #N/D: {df_limpo['PR_CAT'].unique()}')  #verificando a alteração.
+print(f'{'=' *100}')
+
+#Verificação de nulos das demais colunas. 
+demais_colunas = ['CO_ID', 'CL_ID', 'CL_GENERO', 'CL_EC', 'CL_FHL', 'CL_SEG','PR_ID' ,'PR_NOME' ]
+df_limpo[demais_colunas] = df_limpo[demais_colunas].replace('#N/D', np.nan) #subsituir #N/A (padrão de nulo disfaraçado do dataset) por nulos reais.
+print(f'Quantidade de nulos nas demais coluna: \n{df_limpo[demais_colunas].isna().sum()}')
+print(f'{'=' *100}')
+
+#Na coluna PR_NOME existem 3228 registro de nulos disfarçados (#N/D). Será substituído por Sem Nome
+df_limpo['PR_NOME'] = df_limpo['PR_NOME'].fillna('Sem nome')
+print(f'Quantidade de nulos na coluna PR_NOME após alteração: {df_limpo['PR_NOME'].isna().sum()}') 
+print(f'{'=' *100}')
+#Observação: será verificado os nulos disfarçados da coluna DATA junto com a conversão para datetime.
+
+#2.4 Padronizar strings nas colunas PR_CAT e PR_NOME (primeira letra em maiusculo)
 df_limpo['PR_CAT'] = df_limpo['PR_CAT'].str.strip().str.title()
 df_limpo['PR_NOME'] = df_limpo['PR_NOME'].str.strip().str.title()
-print(f'Nome do Produto após tratamento: {df_limpo['PR_NOME'].unique()}')
+print(f'Nome do Produto após tratamento: {df_limpo['PR_NOME'].unique()[:10]}') #mostrar apenas os 10 primeiros produtos, pois são muitos.
+print(f'{'=' * 100}')
 print(f'Categoria únicas após tratamento: {df_limpo['PR_CAT'].unique()}')
 print(f'{'=' * 100}')
 '''
@@ -54,9 +73,6 @@ Apenas as colunas de Categoria e Nome do produto precisam ser padronizadas,
 pois conforme mostrado abaixo as colunas de Genero e Segmentação do cliente 
 já estão 'padronizadas' (as 2 colunas são preenchidas com apenas caractere únicos e maiúsculos.)
 '''
-print(f'Generos únicos: {df_limpo['CL_GENERO'].unique()}')
-print(f'Segmentaçao economica:{df_limpo['CL_SEG'].unique()}')
-print(f'{'=' * 100}')
 
 #2.5 Ajustar tipos de dados:  coluna data está como string.Precisamos converter para datetime.
 df_limpo['DATA'] = pd.to_datetime(df_limpo['DATA'], 
@@ -65,13 +81,11 @@ print('Datas inválidas (NaT):', df_limpo['DATA'].isna().sum())
 print('Tipo da coluna DATA:', df_limpo['DATA'].dtype)
 print(f'{'=' *100}')
 
+#2.6
 
-#Parte 3: Estatísticas para as colunas número de filhos dos clientes
+#Parte 3:  Análise exploratória
 
-#verificando se há nulos disfarçados na coluna número de filhos.
-print(df_limpo['CL_FHL'].unique())
-print('Não há nulos disfarçados na coluna número de filhos.')
-print(f'{'=' *100}')
+#3.1 Estatísticas para as colunas número de filhos dos clientes (Já verificamos acima os nulos disfarçados na coluna número de filhos.)
 
 media = df_limpo['CL_FHL'].mean()
 mediana = df_limpo['CL_FHL'].median()
@@ -83,6 +97,7 @@ contagem = df_limpo['CL_FHL'].count()
 quartil_1 = df_limpo['CL_FHL'].quantile(0.25)
 quartil_3 = df_limpo['CL_FHL'].quantile(0.75)
 
+print('Estatísticas da coluna CL_FLH (qtade filhos dos cliente:)')
 print(f'Média: {media}')
 print(f'Mediana: {mediana}')
 print(f'Desvio: {desvio}')
@@ -94,10 +109,60 @@ print(f'Quartil 1: {quartil_1}')
 print(f'Quartil 3: {quartil_3}')
 print(f'{'=' *100}')
 
+
+
+#Homem ou mulher que mais frequenta o mercado (numero de compras)??????????
+
+
+
+#3.2 estado civil x numero filhos
+
+condicoes = [
+    (df_limpo['CL_EC'] == 1) & (df_limpo['CL_FHL'] == 0), #Casados sem filho (famlia 2 pessoas)
+    (df_limpo['CL_EC'] == 1) & (df_limpo['CL_FHL'] == 1), #casados com filhos único (famílias 3 pessoas)
+    (df_limpo['CL_EC'] == 1) & (df_limpo['CL_FHL'] > 1), #casados com mais de 1 filho (familias de 4 pessoas ou mais)
+    (df_limpo['CL_EC'] == 4) & (df_limpo['CL_FHL'] == 0), #Solteiros sem filhos 
+    (df_limpo['CL_EC'] == 4) & (df_limpo['CL_FHL'] >=1 ), #Solteiros com filho(s) 
+    ((df_limpo['CL_EC'] == 2) | (df_limpo['CL_EC'] == 3)) & (df_limpo['CL_FHL'] == 0), #Divorciado/Separado sem filho
+    ((df_limpo['CL_EC'] == 2) | (df_limpo['CL_EC'] == 3)) & (df_limpo['CL_FHL'] >= 1), #Divorciado/Separado com filho
+    (df_limpo['CL_EC'] == 5) & (df_limpo['CL_FHL'] == 0), #Viúvo sem filho
+    (df_limpo['CL_EC'] == 5) & (df_limpo['CL_FHL'] >= 1), #Viúvo sem filho
+]
+
+resultados = [
+    'Casados Sem Filhos',
+    'Casados Com 1 Filho',
+    'Casados Mais 1 Filho',
+    'Solteiro Sem Filho', 
+    'Solteiro Com Filho(s)',
+    'Divorciado/Separado Sem filho',
+    'Divorciado/Separado com filho(s)',
+    'Víuvo Sem Filho',
+    'Viúvo Com Filho(s)']
+
+df_limpo['CL_PERFIL'] = np.select(               # criando a coluna CL_PERFIL
+    condicoes, resultados, default='Sem Perfil'
+)
+
+'''
+Como os registros são feitos por produtos comprados e o mesmo cliente pode comprar vários produtos e retornar várias vezes ao estabelecimento, o CL_ID se repete muitas vezes.
+O mesmo cliente deve ser contado apenas uma vez, portanto será criado um df_clientes e mantido apenas a primeira ocorrencia do id do cliente.
+'''
+df_clientes = df_limpo.drop_duplicates(subset=['CL_ID'], keep='first')
+
+#exibindo a porcentagem dos perfis
+print('Perfil dos Clientes:')
+print(df_clientes['CL_PERFIL'].value_counts())
+print(f'{'=' *100}')
+print('Perfil dos Clientes em %:')
+print(df_clientes['CL_PERFIL'].value_counts(normalize=True) * 100)
+print(f'{'=' *100}')
+
+
 #Parte 4: Explorar padrões de agrupamento
 
 #4.1 Verificar quais são as categorias  mais compradas por homens e mulheres usando groupby()
-print('Categorias mais compradas por homens e mulheres')
+print('Categorias mais compradas por gênero')
 categoria_genero = (
     df_limpo.groupby(['CL_GENERO', 'PR_CAT'])['PR_CAT']
     .count()
@@ -114,7 +179,7 @@ A categoria de Alimentos é a mais vendida, seguida por Higiene e Limpeza.
 '''
 
 #4.2 Para aprofundar mais, vamos verificar quais são os produtos mais vendidos para homem e mulheres;
-print('Produtos mais comprados por homens e mulheres')
+print('Produtos mais comprados por gênero')
 produto_genero = (
     df_limpo.groupby(['CL_GENERO', 'PR_NOME'])['PR_NOME']
     .count()
@@ -155,3 +220,7 @@ print(f'{'=' *100}')
 Embora a média de filhos seja parecida, existe uma tendência clara. 
 Conforme a segmentação econômica diminui, a média de filhos aumenta.
 '''
+
+
+
+

@@ -27,6 +27,7 @@ A base de dados é um arquivo csv disponível no link (https://www.kaggle.com/da
 * **'PR_ID'**: Código do produto (SKU) comprado;
 * **'PR_CAT'**: Categoria do produto comprado;
 * **'PR_NOME'**: Nome do produto adquirido;
+* **'CL_PERFIL'**: Perfil do cliente.
 
 ## Estutura do Projeto
 
