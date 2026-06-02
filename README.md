@@ -29,7 +29,7 @@ Abre no VsCode ou Colab e rode todas as células.
 * **'PR_ID'**: Código do produto (SKU) comprado;
 * **'PR_CAT'**: Categoria do produto comprado;
 * **'PR_NOME'**: Nome do produto adquirido;
-* **'CL_PERFIL'**: Perfil do cliente. (criada na)
+* **'CL_PERFIL'**: Perfil do cliente. (criada na análise)
 
 ## Estutura do Projeto
 
