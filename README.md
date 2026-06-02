@@ -54,7 +54,7 @@ O repositório está estruturado conforme abaixo:
 
 * **'Duplicadas'**: Foram encontradas 96.553 linhas duplicadas. As linhas duplicadas foram eliminadas para não comprometer a análise.
 * **'Colunas Vazias'**:  As últimas 4 colunas (Unnamed: 10 até Unnamed: 13) estão 100% vazias. Essas colunas foram removidas pois não contribuem com informações para a análise.
-* **'Nulos Disfarçados'**:  Na coluna PR_CAT havia nulos disfarçados como "#N/D". Foram alterados para "Sem categoria".
+* **'Nulos Disfarçados'**:  Nas colunas PR_CAT e PR_NOME havia nulos disfarçados como "#N/D". Foram alterados para "Sem categoria" e "Sem .
 * **'Padronização de Strings'**: As colunas PR_CAT e PR_NOME estavam preenchidas com todas as letras maiúsculas. Foram alteradas para apenas a primeira letra em maiúsculo.
 * **'Ajuste do Tipo de Dados'**: A coluna DATA estava como string. Foi convertida para datetime.
 * **'Verificação de outliers'**: Foram verficados outliers na coluna CO_ID usando o método IQR, para tentar identificar se existiam compras com volume de itens muito acima do normal.
