@@ -55,8 +55,8 @@ df_limpo[demais_colunas] = df_limpo[demais_colunas].replace('#N/D', np.nan) #sub
 print(f'Quantidade de disfarçados nas demais coluna: \n{df_limpo[demais_colunas].isna().sum()}')
 print(f'{'=' *100}')
 
-#Na coluna PR_NOME existem 3228 registro de nulos disfarçados (#N/D). Será substituído por Sem Nome
-df_limpo['PR_NOME'] = df_limpo['PR_NOME'].fillna('Sem nome')
+#Na coluna PR_NOME existem 3228 registros de nulos disfarçados (#N/D). Será substituído por Sem Nome
+df_limpo['PR_NOME'] = df_limpo['PR_NOME'].fillna('Sem Nome')
 print(f'Quantidade de nulos disfarçados na coluna PR_NOME após alteração: {df_limpo['PR_NOME'].isna().sum()}') 
 print(f'{'=' *100}')
 #Observação: será verificado os nulos disfarçados da coluna DATA junto com a conversão para datetime.
@@ -71,17 +71,46 @@ print(f'{'=' * 100}')
 '''
 Apenas as colunas de Categoria e Nome do produto precisam ser padronizadas,
 pois conforme mostrado abaixo as colunas de Genero e Segmentação do cliente 
-já estão 'padronizadas' (as 2 colunas são preenchidas com apenas caractere únicos e maiúsculos.)
+já estão 'padronizadas' (as 2 colunas são preenchidas com apenas caracteres únicos e maiúsculos.)
 '''
 
-#2.5 Ajustar tipos de dados:  coluna data está como string.Precisamos converter para datetime.
+#2.5 Ajustar tipos de dados:  coluna DATA está como string. Precisamos converter para datetime.
 df_limpo['DATA'] = pd.to_datetime(df_limpo['DATA'], 
     dayfirst=True, errors='coerce')  
 print('Datas inválidas (NaT):', df_limpo['DATA'].isna().sum())
 print('Tipo da coluna DATA:', df_limpo['DATA'].dtype)
 print(f'{'=' *100}')
 
-#2.6
+#2.6 Vertificando outliers no volume de itens por compra com IQR.
+'''
+A inteção é saber se existem compras com volume de itens muito acima do normal.
+Com isso, podemos identificar quais são os clientes que efetuaram essas compras e se
+esse comportamento se repete nas demais compras desses clientes.
+'''
+itens_compra = df_limpo['CO_ID'].value_counts()
+
+#2.6.1 Calcular os quartis
+print('Verificação de Outliers no volume de itens por compra.')
+Q1 = itens_compra.quantile(0.25)
+Q3 = itens_compra.quantile(0.75)
+IQR = Q3 - Q1
+
+#2.6.2 Calcular os limites
+limite_inf = Q1 - 1.5 * IQR #Abaixo disso é outlier
+limite_sup = Q3 + 1.5 * IQR #Acima disso é outlier
+
+print(f'Faixa normal de itens por compra: [{limite_inf}, {limite_sup}]')
+
+#2.6.2 Ver quais são os outliers
+print('Outliers:')
+mascara = (itens_compra < limite_inf) | (itens_compra > limite_sup)
+print(f'Outliers encontrados (maiores quantidade de itens por compra): {mascara.sum()}') 
+print(itens_compra[mascara])
+print(f'{'=' *100}')
+
+'''
+Não foram detectados outliers (compras com volume de itens muito acima do normal)
+'''
 
 #Parte 3:  Análise exploratória
 
@@ -109,43 +138,8 @@ print(f'Quartil 1: {quartil_1}')
 print(f'Quartil 3: {quartil_3}')
 print(f'{'=' *100}')
 
-#3.2 Vertificando outliers no volume de itens por compra com IQR.
-'''
-A inteção é saber se existem compras com volume de itens muito acima do normal.
-Com isso, podemos identificar quais são os clientes que efetuaram essas compras e 
-esse comportamento se repete nas demais compras desse clientes.
-'''
-itens_compra = df_limpo['CO_ID'].value_counts()
 
-#3.2.1 Calcular os quartis
-print('Verificação de Outliers no volume de itens por compra.')
-Q1 = itens_compra.quantile(0.25)
-Q3 = itens_compra.quantile(0.75)
-IQR = Q3 - Q1
-
-#3.2.2 Calcular os limites
-limite_inf = Q1 - 1.5 * IQR #Abaixo disso é outlier
-limite_sup = Q3 + 1.5 * IQR #Acima disso é outlier
-
-print(f'Faixa normal de itens por compra: [{limite_inf}, {limite_sup}]')
-
-#3.2.3 Ver quais são os outliers
-print('Outliers:')
-mascara = (itens_compra < limite_inf) | (itens_compra > limite_sup)
-print(f'Outliers encontrados (maiores quantidade de itens por compra): {mascara.sum()}') 
-print(itens_compra[mascara])
-print(f'{'=' *100}')
-
-'''
-Não foram detectados compras com volume de itens muito acima do normal, portanto vamos verificar os clientes 
-com maiores volumes de itens por compra de outra forma (ITEM 3.4 Top 30 compras com maior valume por cliente) 
-'''
-
-#Média de itens por venda.
-
-
-
-#3.3 estado civil x numero filhos
+#3.2 Perfil do Cliente
 
 condicoes = [
     (df_limpo['CL_EC'] == 1) & (df_limpo['CL_FHL'] == 0), #Casados sem filho (famlia 2 pessoas)
@@ -156,7 +150,7 @@ condicoes = [
     ((df_limpo['CL_EC'] == 2) | (df_limpo['CL_EC'] == 3)) & (df_limpo['CL_FHL'] == 0), #Divorciado/Separado sem filho
     ((df_limpo['CL_EC'] == 2) | (df_limpo['CL_EC'] == 3)) & (df_limpo['CL_FHL'] >= 1), #Divorciado/Separado com filho
     (df_limpo['CL_EC'] == 5) & (df_limpo['CL_FHL'] == 0), #Viúvo sem filho
-    (df_limpo['CL_EC'] == 5) & (df_limpo['CL_FHL'] >= 1), #Viúvo sem filho
+    (df_limpo['CL_EC'] == 5) & (df_limpo['CL_FHL'] >= 1), #Viúvo com filho
 ]
 
 resultados = [
@@ -178,34 +172,39 @@ df_limpo['CL_PERFIL'] = np.select(               # criando a coluna CL_PERFIL
 Como os registros são feitos por produtos comprados e o mesmo cliente pode comprar vários produtos e retornar várias vezes ao estabelecimento, o CL_ID se repete muitas vezes.
 O mesmo cliente deve ser contado apenas uma vez, portanto será criado um df_clientes e mantido apenas a primeira ocorrencia do id do cliente.
 '''
+
 df_clientes = df_limpo.drop_duplicates(subset=['CL_ID'], keep='first')
 
 #exibindo a porcentagem dos perfis
 print('Perfil dos Clientes:')
-print(df_clientes['CL_PERFIL'].value_counts())
-print(f'{'=' *100}')
-print('Perfil dos Clientes em %:')
-print(df_clientes['CL_PERFIL'].value_counts(normalize=True) * 100)
-print(f'{'=' *100}')
- 
-#3.4 Top 30 compras com maior valume por cliente
-print('Top 20 compras com maior valume por cliente:')
-top_20_compras = df_limpo[['CL_ID','CO_ID', 'CL_PERFIL']].value_counts().head(30)
-print(f'{top_20_compras}')
+perfil = df_clientes['CL_PERFIL'].value_counts()
+perfil_perc = df_clientes['CL_PERFIL'].value_counts(normalize=True) * 100
+perfil_resumo = pd.DataFrame({
+    'QTD_CLIENTES': perfil,
+    '(%)': perfil_perc})
+print(perfil_resumo)
+
+'''
+48.8% dos clientes da base são pessoas divorciadas, sendo 25.40% sem filhos e 23.40% com filhos. 
+   
+'''
+
+#3.3  Gênero que mais frequenta o mercado (numero de compras)?
+print('Frequência de compras por Gênero: ')
+genero_frequente = df_limpo.groupby('CL_GENERO')['CO_ID'].nunique().reset_index(name='QTD_COMPRAS') #Compras únicas por genero
+total_compras = genero_frequente['QTD_COMPRAS'].sum()  
+genero_frequente['(%)'] = (genero_frequente['QTD_COMPRAS'] / total_compras) * 100
+print(genero_frequente)
 print(f'{'=' *100}')
 
 '''
-15 Divorciados aparecem na lista de compradores de maiores itens.
-Isso pode sugerir o comportamento desse público:
-- Costumam fazer a compra do mês ao irem ao supermercado (por isso muitos itens).
-Essa hipótese será investigada nos próximos comitts do projeto.
+A frequencia de compra é bem equilibrada entre os gêneros. As mulheres são responsáveis por 52% das compras.
 '''
-#Parte 4: Explorar padrões de agrupamento
 
-#4.1 Verificar quais são as categorias  mais compradas por homens e mulheres usando groupby()
+#3.4 Verificar quais são as categorias  mais compradas por homens e mulheres usando groupby()
 print('Categorias mais compradas por gênero')
 categoria_genero = (
-    df_limpo.groupby(['CL_GENERO', 'PR_CAT'])['PR_CAT']
+    df_limpo.groupby(['CL_GENERO', 'PR_CAT'])['PR_CAT'] 
     .count()
     .reset_index(name='quantidade')
     .sort_values(['CL_GENERO', 'quantidade'], ascending=[True, False])  #ordernar por genero e quantidade
@@ -219,7 +218,7 @@ Verificou-se que a ordem das categorias mais vendidas é igual para homens e mul
 A categoria de Alimentos é a mais vendida, seguida por Higiene e Limpeza. 
 '''
 
-#4.2 Para aprofundar mais, vamos verificar quais são os produtos mais vendidos para homem e mulheres;
+#3.5 Para aprofundar mais, vamos verificar quais são os produtos mais vendidos para homem e mulheres;
 print('Produtos mais comprados por gênero')
 produto_genero = (
     df_limpo.groupby(['CL_GENERO', 'PR_NOME'])['PR_NOME']
@@ -241,7 +240,7 @@ Itens para criança de higiene e para crianças estão no top 10 dos 2 gêneros,
 As mulheres compram mais itens para limpeza da casa do que os homens.
 '''
 
-#4.3 Média de filhos por segmentação econômica do cliente usando pivot_table
+#3.6 Média de filhos por segmentação econômica do cliente usando pivot_table
 
 #Antes do agrupamento precisamos filtrar o ID único dos clientes, para nao distorcer a análise.
 id_clientes_unicos = df_limpo.drop_duplicates(subset=['CL_ID'], keep='first')
@@ -262,12 +261,28 @@ Embora a média de filhos seja parecida, existe uma tendência clara.
 Conforme a segmentação econômica diminui, a média de filhos aumenta.
 '''
 
+
+# 3.7 Ver quais dias tem mais movimento (hipótese: confirmar se as datas coincidem com os dias de pagamento de salário)
+
+from datetime import date, datetime
+
+df_limpo['dia_mes'] = df_limpo['DATA'].dt.day #extrair o dia
+df_limpo['periodo_compra'] = pd.cut(
+    df_limpo['dia_mes'],
+    bins = [1, 10, 20, 31],
+    labels = ['Pgto Salário', 'Meio do Mês', 'Final do mês']
+)
+
+compras_por_dia = df_limpo.groupby('periodo_compra')['CO_ID'].nunique().reset_index(name='total_compras')
+total_compras_dia = compras_por_dia['total_compras'].sum()
+compras_por_dia['(%)'] = (compras_por_dia['total_compras'] / total_compras_dia) * 100
+print(compras_por_dia)
+
 '''
-Proximos commits 
-- Gênero que mais frequenta o mercado (numero de compras)?
-- Ver quais dias tem mais movimento (hipótese: confimar se as datas conincidem com os dias de pagamento de salário)
-- Investigar a hipótese sobre os divorciados (ida ao mercado para fazer a compra do mês, por isso vários itens.
-podemos verificar a frequencia de idas ao mercado no intervalo de datas do dataset. )
+O movimento na loja não é impactado fortemente pelo pagamento de salário. 
+Ao contrário do que se esperava (maior movimentação coincidindo com as datas de pagamento de salário.)
 '''
 
+df_limpo = df_limpo.drop(columns=['dia_mes', 'periodo_compra'])
+df_limpo.to_csv('data/base_varejo_limpa.csv', sep=';', encoding = 'utf-8', decimal = ',')
 
