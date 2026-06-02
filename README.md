@@ -9,7 +9,7 @@ A base de dados é um arquivo csv disponível no link (https://www.kaggle.com/da
 
 É composto por 830.000 linhas com informações sobre as vendas no setor de varejo.
 
-Abre no VsCode ou Colab e rode todas as células.
+Para rodar a análise você pode usar VsCode ou Colab. Execute todas as células.
 
 ### Colunas existentes
 
@@ -25,7 +25,7 @@ Abre no VsCode ou Colab e rode todas as células.
     4. Solteiro;
     5: Viúvo; 
 * **'CL_FHL'**: Número de filhos do cliente;
-* **'CL_SEG'**: Segmentão econômica (classe social) do cliente;
+* **'CL_SEG'**: Segmentação econômica (classe social) do cliente;
 * **'PR_ID'**: Código do produto (SKU) comprado;
 * **'PR_CAT'**: Categoria do produto comprado;
 * **'PR_NOME'**: Nome do produto adquirido;
