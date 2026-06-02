@@ -1,3 +1,7 @@
+## Gustavo Giacomini
+## Análise de Dados (Turma 2)
+
+
 # Mini Projeto de Análise de Dados
 
 Este projeto é uma atividade avaliativa do curso de análise de dados do SCTEC.
@@ -42,6 +46,7 @@ O repositório está estruturado conforme abaixo:
 
 * **Python**
 * **Pandas** (para manipulação e limpeza de dados)
+* **Numpy**
 * **VS Code** (Ambiente de desenvolvimento)
 
 
