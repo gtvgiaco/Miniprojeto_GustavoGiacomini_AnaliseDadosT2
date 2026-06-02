@@ -1,6 +1,6 @@
 # Mini Projeto de Análise de Dados
 
-Este projeto é uma atividade avaliativa do curso de análise de aados do SCTEC.
+Este projeto é uma atividade avaliativa do curso de análise de dados do SCTEC.
 O objetivo é realizar a limpeza, tratamento e análise exploratória de uma base de dados de vendas e clientes do setor de varejo.
 
 ## Base de Dados
